@@ -1,6 +1,6 @@
 .page-container {
   padding: 40px;
-  max-width: 900px;
+  max-width: 800px;
   margin: 0 auto;
   width: 100%;
 }
@@ -15,30 +15,32 @@
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 80px;
-  height: 80px;
-  border-radius: 20px;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  color: #a5b4fc;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: #111;
+  border: 1px solid #222;
+  color: #fff;
 }
 
 .hero-title {
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 500;
+  letter-spacing: -0.03em;
   margin-bottom: 12px;
-  background: linear-gradient(135deg, #fff, #a5b4fc);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #fff;
 }
 
 .hero-subtitle {
-  font-size: 1.1rem;
-  color: var(--text-muted);
+  font-size: 1rem;
+  color: #888;
 }
 
 .form-container {
   padding: 32px;
+  border-radius: 12px;
+  background: #050505;
+  border: 1px solid #1a1a1a;
 }
 
 .form-group {
@@ -48,14 +50,14 @@
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  color: #e2e8f0;
+  color: #ccc;
 }
 
 .submit-btn {
   width: 100%;
-  padding: 14px;
-  font-size: 1.05rem;
+  padding: 12px;
+  font-size: 0.95rem;
   margin-top: 10px;
 }
