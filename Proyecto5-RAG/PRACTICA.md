@@ -207,3 +207,74 @@ Variables de entorno necesarias (ver `.env.example`):
 | `.env.example` con variables documentadas | ✅ |
 | README técnico con arquitectura y decisiones | ✅ |
 | Vídeo demo (3–5 min) | ⏳ Pendiente |
+
+---
+
+## FAQ — Preguntas frecuentes
+
+### ¿Por qué Azure AI Search y no una base de datos vectorial local como ChromaDB o Faiss?
+
+Azure AI Search es un servicio gestionado: no hay infraestructura que levantar ni mantener. Ofrece **búsqueda híbrida** (vectorial + texto léxico) de forma nativa, filtrado por metadatos con sintaxis OData (`$filter=assistant_id eq 'X'`) y escalado automático. ChromaDB o Faiss son más sencillos de arrancar en local, pero requieren gestión propia en producción. Para este proyecto ya disponíamos de créditos de Azure, así que era la elección natural.
+
+---
+
+### ¿Por qué SQLite y no PostgreSQL?
+
+SQLite elimina la necesidad de levantar un servidor de base de datos para el desarrollo y la demo. SQLAlchemy abstrae el motor — cambiar a PostgreSQL en producción es una sola línea en el `.env` (`DATABASE_URL=postgresql://...`). Para un proyecto de esta escala, SQLite es suficiente y reduce la fricción de setup.
+
+---
+
+### ¿Cómo garantizas que el asistente no inventa información?
+
+Dos mecanismos:
+
+1. **Instrucción en el system prompt:** `"Responde ÚNICAMENTE utilizando la información extraída de tus documentos. Si la información no está en el contexto, indica explícitamente que no puedes contestar. NO te inventes datos."`
+2. **`temperature=0.3`:** valor bajo que reduce la variabilidad y creatividad del modelo, haciéndolo más fiel al contexto proporcionado.
+
+Si la búsqueda vectorial no devuelve chunks relevantes, el contexto llega vacío (`"No se encontraron documentos relevantes"`) y el modelo no tiene material con el que fabricar una respuesta.
+
+---
+
+### ¿Cómo funciona el aislamiento entre asistentes?
+
+Cada chunk indexado en Azure AI Search incluye el campo `assistant_id` como metadato filtrable. La función `rag_chat()` siempre incluye `filter=f"assistant_id eq '{assistant_id}'"` en la consulta — Azure AI Search descarta físicamente todos los chunks que no pertenezcan a ese asistente antes de calcular similitud. No hay posibilidad de fuga de información entre asistentes.
+
+---
+
+### ¿Qué es un embedding y por qué se necesita?
+
+Un embedding es la representación numérica del significado de un texto: un array de 1536 números (con `text-embedding-ada-002`) donde textos semánticamente similares tienen vectores matemáticamente cercanos. Se necesita porque los LLMs no "buscan" texto literal — para encontrar el fragmento más relevante a una pregunta hay que comparar significados, no palabras. La distancia coseno entre dos vectores mide esa similitud semántica.
+
+---
+
+### ¿Por qué JWT y no sesiones de servidor?
+
+JWT es **stateless**: el token lleva el `user_id` firmado con una clave secreta. El backend no necesita consultar ninguna tabla de sesiones para autenticar una request — solo verifica la firma. Esto hace que cualquier instancia del backend pueda validar cualquier token sin estado compartido, lo que es la base de la escalabilidad horizontal.
+
+---
+
+### ¿Qué pasa si se sube un PDF muy grande?
+
+LangChain `RecursiveCharacterTextSplitter` lo parte en chunks de **1000 caracteres con 200 de solape**. El solape evita que una idea que cae justo en el corte entre dos chunks quede truncada e irrecuperable. Cada chunk se vectoriza y sube de forma independiente. Los chunks se envían en lotes de 50 a Azure AI Search para no saturar la API.
+
+---
+
+### ¿Por qué HNSW para la búsqueda vectorial?
+
+HNSW (Hierarchical Navigable Small World) es un algoritmo de búsqueda aproximada de vecinos más cercanos (ANN). En lugar de comparar la pregunta contra todos los vectores del índice (fuerza bruta, O(n)), construye un grafo jerárquico que permite encontrar los k vecinos más cercanos en O(log n). La configuración usada: `m=4` (conexiones por nodo), `efConstruction=400` (calidad del grafo en construcción), `efSearch=500` (amplitud de búsqueda en consulta), métrica coseno.
+
+---
+
+### ¿Dónde se guardan las contraseñas?
+
+Nunca en claro. Al registrarse, bcrypt genera un **hash irreversible** con salt aleatorio incorporado. En la tabla `users` solo se almacena ese hash. En el login, bcrypt verifica que la contraseña introducida produce el mismo hash — sin necesidad de desencriptar nada, porque bcrypt no es encriptación sino hashing.
+
+---
+
+### ¿Qué ocurre si se elimina un documento?
+
+Se ejecutan dos operaciones:
+1. **Azure AI Search:** se buscan todos los chunks con `document_id eq '{id}'` y se borran del índice vectorial.
+2. **SQLite:** se elimina el registro de la tabla `documents`.
+
+El asistente deja de tener acceso a ese conocimiento de forma inmediata en la siguiente consulta.
