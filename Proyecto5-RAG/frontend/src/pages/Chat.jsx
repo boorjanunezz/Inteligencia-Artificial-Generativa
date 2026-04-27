@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Send, ArrowLeft, Bot, User } from 'lucide-react';
-import api from '../lib/api';
+import { Send, ArrowLeft, Bot, User, ThumbsUp, ThumbsDown, Copy, Check } from 'lucide-react';
+import api, { setFeedback, clearFeedback } from '../lib/api';
 import './Chat.css';
 
 export default function Chat() {
@@ -9,12 +9,11 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
   const bottomRef = useRef(null);
 
   useEffect(() => {
-    if (sessionId) {
-      loadMessages();
-    }
+    if (sessionId) loadMessages();
   }, [sessionId]);
 
   useEffect(() => {
@@ -26,7 +25,7 @@ export default function Chat() {
       const res = await api.get(`/chat/${sessionId}/messages`);
       setMessages(res.data);
     } catch (err) {
-      console.error("Error loading messages:", err);
+      console.error('Error loading messages:', err);
     }
   };
 
@@ -34,65 +33,123 @@ export default function Chat() {
     e.preventDefault();
     if (!input.trim() || !sessionId) return;
 
-    const userMsgDesc = input;
+    const text = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMsgDesc }]);
+    setMessages((prev) => [...prev, { role: 'user', content: text }]);
     setLoading(true);
 
     try {
-      const res = await api.post(`/chat/${sessionId}/messages`, { content: userMsgDesc });
-      setMessages(prev => [...prev, res.data]);
+      const res = await api.post(`/chat/${sessionId}/messages`, { content: text });
+      setMessages((prev) => [...prev, res.data]);
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'La base de conocimiento RAG o el LLM tardaron demasiado en responder. Por favor revisa la consola y el backend.' }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'El backend tardó demasiado en responder. Revisa que las API keys estén configuradas.' },
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!sessionId) {
-    return <div className="page-container">Error: sessionId is required.</div>;
-  }
+  const handleFeedback = async (msgId, value) => {
+    const msg = messages.find((m) => m.id === msgId);
+    if (!msg) return;
+    try {
+      if (msg.feedback === value) {
+        await clearFeedback(msgId);
+        setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, feedback: null } : m)));
+      } else {
+        await setFeedback(msgId, value);
+        setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, feedback: value } : m)));
+      }
+    } catch (err) {
+      console.error('Feedback error:', err);
+    }
+  };
+
+  const handleCopy = async (msgId, content) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedId(msgId);
+      setTimeout(() => setCopiedId(null), 1800);
+    } catch {
+      // clipboard not available
+    }
+  };
+
+  if (!sessionId) return <div className="page-container">Error: sessionId requerido.</div>;
 
   return (
     <div className="chat-container">
       <div className="chat-header glass-panel">
-        <Link to={`/assistant/${id}`} className="btn btn-ghost" style={{padding: '0.4rem'}}>
-          <ArrowLeft size={20} />
+        <Link to={`/assistant/${id}`} className="btn btn-ghost" style={{ padding: '0.4rem 0.6rem' }}>
+          <ArrowLeft size={18} />
         </Link>
-        <div style={{marginLeft: '12px'}}>
-          <h2 style={{fontSize: '1.1rem', margin: 0}}>Conversación RAG</h2>
-          <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Respondiendo con base al contexto del asistente</span>
+        <div style={{ marginLeft: '12px' }}>
+          <p style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-1)' }}>Conversación RAG</p>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-2)' }}>Respuestas basadas en los documentos del asistente</p>
         </div>
       </div>
 
       <div className="messages-area glass-panel">
         {messages.length === 0 && (
           <div className="empty-chat">
-            <Bot size={48} className="empty-icon" />
-            <p>Este es el inicio de tu conversación.</p>
-            <span>Todo el conocimiento proviene estrictamente de los documentos del asistente.</span>
+            <Bot size={44} className="empty-icon" />
+            <p style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-2)' }}>Inicio de conversación</p>
+            <span style={{ fontSize: '0.82rem' }}>Las respuestas provienen exclusivamente de los documentos del asistente.</span>
           </div>
         )}
 
         {messages.map((m, idx) => (
           <div key={idx} className={`message-wrapper ${m.role}`}>
             <div className={`message ${m.role}-bubble`}>
-              {m.role === 'assistant' ? <Bot size={18} className="msg-icon" /> : <User size={18} className="msg-icon" />}
-              <div className="msg-content">
+              {m.role === 'assistant' ? (
+                <Bot size={17} className="msg-icon" />
+              ) : (
+                <User size={17} className="msg-icon" />
+              )}
+              <div className="msg-content" style={{ flex: 1 }}>
                 {m.content.split('\n').map((line, i) => (
                   <p key={i}>{line}</p>
                 ))}
+
+                {m.role === 'assistant' && m.id && (
+                  <div className="msg-actions">
+                    <button
+                      className={`msg-action-btn ${copiedId === m.id ? 'copied' : ''}`}
+                      onClick={() => handleCopy(m.id, m.content)}
+                      title="Copiar respuesta"
+                    >
+                      {copiedId === m.id ? <Check size={13} /> : <Copy size={13} />}
+                    </button>
+                    <button
+                      className={`msg-action-btn ${m.feedback === 1 ? 'active-up' : ''}`}
+                      onClick={() => handleFeedback(m.id, 1)}
+                      title="Útil"
+                    >
+                      <ThumbsUp size={13} />
+                    </button>
+                    <button
+                      className={`msg-action-btn ${m.feedback === -1 ? 'active-down' : ''}`}
+                      onClick={() => handleFeedback(m.id, -1)}
+                      title="No útil"
+                    >
+                      <ThumbsDown size={13} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         ))}
+
         {loading && (
           <div className="message-wrapper assistant">
-            <div className="message assistant-bubble typing">
-              <Bot size={18} className="msg-icon" />
+            <div className="message assistant-bubble">
+              <Bot size={17} className="msg-icon" />
               <div className="typing-indicator">
-                <span></span><span></span><span></span>
+                <span /><span /><span />
               </div>
             </div>
           </div>
@@ -104,14 +161,14 @@ export default function Chat() {
         <form onSubmit={handleSend} className="input-form">
           <input
             type="text"
-            className="input"
+            className="chat-input"
             value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="Escribe tu consulta para el asistente..."
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Pregunta al asistente..."
             disabled={loading}
           />
           <button type="submit" className="btn btn-primary send-btn" disabled={loading || !input.trim()}>
-            <Send size={18} />
+            <Send size={17} />
           </button>
         </form>
       </div>

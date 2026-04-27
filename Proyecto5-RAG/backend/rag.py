@@ -119,6 +119,26 @@ def extract_text_from_file(file_path: str, mimetype: str) -> str:
             text = f.read()
     return text
 
+def process_text_directly(assistant_id: int, document_id: int, text: str):
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    chunks = splitter.split_text(text)
+    credential = AzureKeyCredential(SEARCH_KEY)
+    search_client = SearchClient(endpoint=SEARCH_ENDPOINT, index_name=SEARCH_INDEX_NAME, credential=credential)
+    docs_to_upload = []
+    for i, chunk in enumerate(chunks):
+        docs_to_upload.append({
+            "id": f"d{document_id}c{i}u{uuid.uuid4().hex[:8]}",
+            "assistant_id": str(assistant_id),
+            "document_id": str(document_id),
+            "content": chunk,
+            "content_vector": get_embeddings(chunk)
+        })
+        if len(docs_to_upload) >= 50:
+            search_client.upload_documents(documents=docs_to_upload)
+            docs_to_upload = []
+    if docs_to_upload:
+        search_client.upload_documents(documents=docs_to_upload)
+
 def process_and_upload_document(assistant_id: int, document_id: int, file_path: str, mimetype: str):
     text = extract_text_from_file(file_path, mimetype)
     

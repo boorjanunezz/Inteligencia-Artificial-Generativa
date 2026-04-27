@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bot, Plus, Home, ChevronRight } from 'lucide-react';
+import { Bot, Plus, Home, ChevronRight, LogOut } from 'lucide-react';
 import api from '../lib/api';
 import './Sidebar.css';
 
-export default function Sidebar() {
+export default function Sidebar({ onLogout }) {
   const [assistants, setAssistants] = useState([]);
   const location = useLocation();
 
@@ -14,6 +14,9 @@ export default function Sidebar() {
       setAssistants(res.data);
     } catch (err) {
       console.error(err);
+      if (err.response?.status === 401) {
+        onLogout();
+      }
     }
   };
 
@@ -67,6 +70,9 @@ export default function Sidebar() {
         <Link to="/" className="btn btn-primary w-full new-btn">
           <Plus size={18} /> Crear Asistente
         </Link>
+        <button onClick={onLogout} className="btn btn-ghost w-full" style={{ justifyContent: 'center', fontSize: '0.85rem' }}>
+          <LogOut size={16} /> Cerrar Sesión
+        </button>
       </div>
     </aside>
   );

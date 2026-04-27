@@ -1,151 +1,209 @@
-# Práctica: Aplicación Full-Stack de Asistentes RAG (multi-asistente)
+# NexRAG — Aplicación Full-Stack de Asistentes con RAG
 
-## Contexto (caso real)
-
-Una empresa nos ha contactado para desarrollar un **producto interno** con IA generativa.
-
-Necesitan una aplicación **full-stack** que permita crear **asistentes personalizados** y chatear con ellos aplicando **RAG (Retrieval-Augmented Generation)**.
-
-Este documento describe el **core** que la empresa exige: requisitos mínimos obligatorios. El stack, la arquitectura y el diseño quedan a elección del equipo, siempre que se cumpla lo siguiente.
-
-La idea clave es esta:
-
-- Se pueden crear **varios asistentes**.
-- Cada asistente tiene **sus propias instrucciones** (cómo debe comportarse).
-- Cada asistente tiene **sus propios documentos de referencia**.
-- Cuando chateas con un asistente, **solo puede responder usando la información de SUS documentos** (aislamiento total entre asistentes).
-- El chat debe **persistir** (historial/memoria conversacional).
+> Producto interno de IA generativa para una empresa que necesita asistentes de conocimiento aislados, cada uno con sus propios documentos y comportamiento.
 
 ---
 
-## Funcionalidades core (obligatorias)
+## Caso de uso
 
-Tu aplicación **DEBE** implementar estas funcionalidades. El formato, el stack y el diseño son **totalmente libres**, pero estas capacidades tienen que existir y funcionar.
-
-### 1) Gestión de asistentes
-
-Debe existir un módulo para gestionar asistentes:
-
-- Crear asistente
-- Listar asistentes
-- Editar asistente
-- Eliminar asistente
-
-Cada asistente debe tener, como mínimo:
-
-- `nombre`
-- `instrucciones` (prompt del sistema / reglas del asistente)
-- (Opcional) `descripción`
-
-### 2) Documentos por asistente
-
-Debe ser posible asociar documentos a un asistente (no a “la app” en general):
-
-- Subir documentos a un asistente
-- Ver el listado de documentos de un asistente
-- Eliminar documentos de un asistente
-
-Formatos: PDF, DOCX, PPTX, TXT/Markdown y otros que quieras. Si aceptas imágenes, deberás extraer texto (OCR) o especificar claramente qué se soporta.
-
-### 3) Ingesta, chunking y vectorización (por asistente)
-
-Cuando se sube un documento a un asistente, tu sistema debe:
-
-- Extraer el texto
-- Dividirlo en fragmentos (chunking)
-- Generar embeddings de cada fragmento
-- Almacenar fragmentos + metadata + embeddings en un sistema de búsqueda/vectorial
-
-Requisito crítico: **aislamiento por asistente**.
-
-- Cada asistente debe tener su propio “espacio” de recuperación (índice/colección/namespace/filtro) para garantizar que **nunca** se recuperen documentos de otro asistente.
-
-### 4) Chat con RAG por asistente (aislado)
-
-Debe existir un chat en el que el usuario:
-
-- Seleccione un asistente
-- Envíe mensajes
-- Reciba respuestas generadas por un LLM
-
-Para cada mensaje, el flujo mínimo debe ser:
-
-1. Recuperar contexto **solo** de los documentos del asistente seleccionado
-2. Construir el prompt con:
-   - Instrucciones del asistente
-   - Historial de la conversación (si aplica)
-   - Contexto recuperado
-3. Generar la respuesta
-
-Además:
-
-- Las respuestas deben ser **fundamentadas** en los documentos del asistente.
-- Deben incluir **citas** (referencias a los documentos/fragmentos usados).
-- Si el asistente **no encuentra evidencia suficiente** en sus documentos, debe responder explícitamente que no puede contestar con la información disponible (sin inventar).
-
-### 5) Persistencia del chat (memoria conversacional)
-
-El chat debe mantener y persistir el contexto:
-
-- Guardar historial de conversación
-- Poder reanudar una conversación (por asistente)
-- Permitir limpiar/iniciar una conversación nueva
-
-La persistencia puede ser por usuario autenticado o por sesión (a elección), pero debe quedar claro y funcionar.
-
-### 6) Aplicación full-stack
-
-La aplicación debe tener:
-
-- **Frontend**: interfaz para gestionar asistentes, documentos y el chat.
-- **Backend**: API/servicio que implemente la gestión de asistentes, la ingesta/indexado y el chat con RAG.
+Una empresa quiere desplegar múltiples asistentes de IA dentro de su intranet. Cada departamento tiene su propio asistente con documentación propia (manuales, contratos, normativas). Un asistente de RRHH nunca debe responder usando documentos de Legal, y viceversa. El historial de cada conversación persiste para que los empleados puedan retomarlo.
 
 ---
 
-## Libertad total para ampliar
+## Funcionalidades core ✅
 
-Una vez cumplas el core, puedes ampliar la práctica con lo que quieras (features extra, mejoras de UX, autenticación, multi-usuario, permisos, streaming, herramientas, etc.). El objetivo es que la aplicación cumpla las funcionalidades core y que el resto sea totalmente a tu criterio.
+### 1 · Gestión de asistentes
+
+| Operación | Estado |
+|---|---|
+| Crear asistente (nombre, descripción, instrucciones) | ✅ |
+| Listar asistentes del usuario | ✅ |
+| Ver detalle de asistente | ✅ |
+| Eliminar asistente (cascada: docs + índice) | ✅ |
+
+Cada asistente se asocia a un `user_id`, por lo que el aislamiento entre usuarios es completo.
+
+### 2 · Documentos por asistente
+
+| Operación | Formatos | Estado |
+|---|---|---|
+| Subir documento | PDF, DOCX, TXT | ✅ |
+| Listar documentos | — | ✅ |
+| Eliminar documento (borra del índice vectorial) | — | ✅ |
+
+### 3 · Ingesta, chunking y vectorización
+
+El flujo al subir un documento:
+
+```
+Archivo → Extracción de texto → Chunking (LangChain) → Embeddings (Azure OpenAI) → Azure AI Search
+```
+
+**Aislamiento garantizado:** cada chunk se indexa con un campo `assistant_id`. Todas las búsquedas filtran por ese campo — un asistente nunca recupera contexto ajeno.
+
+### 4 · Chat con RAG (aislado por asistente)
+
+Flujo por mensaje:
+
+```
+Query usuario
+   ↓
+Búsqueda vectorial filtrada por assistant_id
+   ↓
+Prompt = instrucciones + historial + contexto recuperado
+   ↓
+LLM (GPT-4o via Azure OpenAI)
+   ↓
+Respuesta con citas de fuentes
+```
+
+Si el asistente no tiene evidencia suficiente en sus documentos, responde explícitamente que no puede contestar (no inventa).
+
+### 5 · Persistencia del chat
+
+| Feature | Estado |
+|---|---|
+| Guardar historial por sesión (UUID) | ✅ |
+| Múltiples sesiones por asistente | ✅ |
+| Reanudar conversación anterior | ✅ |
+| Crear sesión nueva (chat limpio) | ✅ |
+
+---
+
+## Features adicionales implementadas
+
+### 🔐 Autenticación (JWT + bcrypt)
+
+Sistema completo de registro y login:
+
+| Endpoint | Descripción |
+|---|---|
+| `POST /register` | Crea usuario con contraseña hasheada (bcrypt) |
+| `POST /login` | Devuelve JWT firmado (7 días de validez) |
+
+- Token almacenado en `localStorage`, incluido en todas las requests via interceptor de axios.
+- Todos los endpoints de asistentes, documentos y chat están protegidos.
+- El `user_id` del token determina qué recursos son accesibles — no hay posibilidad de acceder a los datos de otro usuario.
+
+**Flujo de sesión:**
+
+```
+Login / Registro → JWT → localStorage → interceptor axios → requests autenticadas
+                                                                        ↓
+                                                      token expirado → logout automático
+```
+
+### 👍 Feedback en respuestas RAG
+
+Los usuarios pueden valorar cada respuesta del asistente con pulgar arriba o abajo:
+
+- `PUT /chat/messages/{id}/feedback` — body: `{ "feedback": 1 }` (arriba) o `{ "feedback": -1 }` (abajo)
+- Estado visual inmediato en el chat: el botón activo se resalta
+- Toggle: hacer clic en el mismo botón activo lo desmarca
+- Valor persiste en base de datos (columna `feedback` en `chat_messages`)
+
+---
+
+## Stack tecnológico
+
+| Capa | Tecnología |
+|---|---|
+| Frontend | React 18 + Vite + React Router + axios + lucide-react |
+| Backend | FastAPI + SQLAlchemy + SQLite |
+| Auth | PyJWT + bcrypt |
+| Vectorización | Azure OpenAI (text-embedding-ada-002) |
+| Índice vectorial | Azure AI Search |
+| LLM | Azure OpenAI (GPT-4o) |
+| Chunking | LangChain Text Splitters |
+
+---
+
+## Arquitectura
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                        Browser                          │
+│  React SPA (Vite)                                       │
+│  ├── Login/Register ──────────────────────────────────┐ │
+│  ├── Home (crear asistente)                           │ │
+│  ├── AssistantDetail (docs + sesiones de chat)        │ │
+│  └── Chat (RAG + feedback)                            │ │
+└───────────────────────────┬───────────────────────────┘ │
+                            │ HTTP + JWT Bearer            │
+┌───────────────────────────▼─────────────────────────────┐
+│                   FastAPI Backend                        │
+│  /register  /login                                       │
+│  /assistants  /assistants/{id}/documents                 │
+│  /assistants/{id}/chat  /chat/{id}/messages              │
+│  /chat/messages/{id}/feedback                            │
+└──────┬──────────────────────────┬───────────────────────┘
+       │                          │
+┌──────▼──────┐          ┌────────▼────────────┐
+│   SQLite    │          │  Azure AI Search     │
+│  (usuarios, │          │  (chunks + embeddings│
+│   asistentes│          │   filtrados por      │
+│   chats,    │          │   assistant_id)      │
+│   mensajes) │          └────────┬────────────┘
+└─────────────┘                   │
+                          ┌───────▼──────────┐
+                          │  Azure OpenAI    │
+                          │  Embeddings + LLM│
+                          └──────────────────┘
+```
+
+---
+
+## Cómo se cumplen los requisitos críticos
+
+**Aislamiento por asistente en retrieval:**
+Cada chunk indexado incluye `assistant_id` como campo de metadatos. La función `rag_chat()` en `rag.py` siempre incluye un filtro `$filter=assistant_id eq {id}` en la búsqueda vectorial de Azure AI Search.
+
+**Persistencia del chat:**
+`ChatSessionDB` (UUID) + `ChatMessageDB` en SQLite. Al abrir una sesión existente, el frontend carga los mensajes via `GET /chat/{session_id}/messages` y los históriales se pasan al LLM en cada turno.
+
+**Citas y comportamiento de no inventar:**
+El system prompt incluye la instrucción de citar fuentes y responder solo con información de los fragmentos recuperados. Si el contexto está vacío o no es relevante, el prompt fuerza una respuesta de "no tengo información suficiente".
+
+---
+
+## Setup local
+
+### Backend
+
+```bash
+cd backend
+python -m venv venv && source venv/Scripts/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp ../.env.example .env  # edita con tus API keys
+uvicorn main:app --reload
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Variables de entorno necesarias (ver `.env.example`):
+
+| Variable | Descripción |
+|---|---|
+| `AZURE_OPENAI_KEY` | API key de Azure OpenAI |
+| `AZURE_OPENAI_ENDPOINT` | Endpoint del recurso |
+| `AZURE_SEARCH_ENDPOINT` | Endpoint de Azure AI Search |
+| `AZURE_SEARCH_KEY` | API key admin de Azure AI Search |
+| `SECRET_KEY` | Clave para firmar JWT |
 
 ---
 
 ## Entregables
 
-Tu entrega debe incluir:
-
-### 1) Repositorio de GitHub
-
-Un repositorio público de GitHub con el **código fuente completo** y una estructura clara (por ejemplo, separación de `frontend/` y `backend/`, o el enfoque que elijas).
-
-Debe incluir:
-
-- Código completo y ejecutable
-- `.gitignore` apropiado
-- Gestión de dependencias (`package.json`, `requirements.txt`, `pyproject.toml`, etc.)
-- Variables de entorno documentadas con un `.env.example` (sin credenciales reales)
-
-### 2) README técnico
-
-El README debe explicar la aplicación a nivel técnico, incluyendo como mínimo:
-
-- Descripción del producto (qué problema resuelve y qué hace)
-- Stack tecnológico utilizado
-- **Arquitectura implementada** (diagrama y/o explicación clara)
-- **Decisiones de diseño** (técnicas y de producto/UX) relevantes (por qué ese enfoque)
-- Guía de ejecución local paso a paso (frontend + backend)
-- Cómo se cumple el core:
-  - cómo garantizas el **aislamiento por asistente** en el retrieval
-  - cómo implementas la **persistencia del chat/memoria**
-  - cómo gestionas las **citas** y el comportamiento de “no inventar”
-
-### 3) Vídeo demo (3–5 minutos)
-
-El vídeo debe mostrar de forma clara:
-
-- Creación de al menos **2 asistentes** con instrucciones distintas
-- Subida de documentos distintos a cada asistente
-- Chat con cada asistente demostrando que responde con **sus** documentos (sin contaminación entre asistentes)
-- Persistencia del historial (continuar conversación / recargar)
-- Ejemplo de citas/fuentes en las respuestas
-
-## Presentaciones
-Se escogerá a 5 alumnos al azar para que presenten su proyecto (+ voluntarios). Preparad la presentación de la demo y el producto para el día de la presentación, porque no sabremos los alumnos que exponen hasta el día de las exposiciones.
+| Entregable | Estado |
+|---|---|
+| Repositorio GitHub con código completo | ✅ |
+| `.gitignore` apropiado | ✅ |
+| `.env.example` con variables documentadas | ✅ |
+| README técnico con arquitectura y decisiones | ✅ |
+| Vídeo demo (3–5 min) | ⏳ Pendiente |
