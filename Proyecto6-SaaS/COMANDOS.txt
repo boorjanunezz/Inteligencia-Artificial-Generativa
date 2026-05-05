@@ -1,0 +1,38 @@
+===================================================
+  COMANDOS PARA ARRANCAR PREJMIND (Proyecto6-SaaS)
+===================================================
+
+Necesitas DOS terminales abiertas al mismo tiempo.
+
+---------------------------------------------------
+TERMINAL 1 — BACKEND (FastAPI)
+---------------------------------------------------
+cd "c:\Users\nunez\Desktop\Master IA y Big Data\IA Generativa\Proyecto6-SaaS\backend"
+& ".venv/Scripts/python.exe" -m uvicorn main:app --reload --port 8000
+
+Espera hasta ver:
+  INFO:     Application startup complete.
+
+URL del backend:  http://127.0.0.1:8000
+Documentacion:    http://127.0.0.1:8000/docs
+
+---------------------------------------------------
+TERMINAL 2 — FRONTEND (React + Vite)
+---------------------------------------------------
+cd "c:\Users\nunez\Desktop\Master IA y Big Data\IA Generativa\Proyecto6-SaaS\frontend"
+npm run dev
+
+URL de la app:    http://localhost:5173
+
+---------------------------------------------------
+NOTAS
+---------------------------------------------------
+- El backend usa el .venv propio en backend/.venv (Python 3.11)
+  NO uses el .venv de la raiz del workspace (es Python 3.14 y no funciona)
+
+- Si el puerto 8000 ya esta ocupado, mata el proceso anterior:
+  PowerShell: Get-Process -Id (Get-NetTCPConnection -LocalPort 8000).OwningProcess | Stop-Process
+
+- Si borras prepmind.db tendras que volver a registrarte
+
+===================================================

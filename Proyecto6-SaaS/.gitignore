@@ -1,0 +1,25 @@
+# Claude Code internal data
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Env & secrets
+backend/.env
+*.env
+
+# Database
+backend/*.db
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db
