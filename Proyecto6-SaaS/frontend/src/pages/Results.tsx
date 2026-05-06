@@ -1,11 +1,53 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import ReactMarkdown from 'react-markdown'
 import Layout from '../components/Layout'
 import Icon from '../components/Icon'
 import { getSession, retryAnswer } from '../services/api'
 import type { SessionDetail, Question, RetryAnswer } from '../types'
+
+function parseBold(text: string) {
+  const parts = text.split(/\*\*(.+?)\*\*/)
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+  )
+}
+
+function PlanMarkdown({ text }: { text: string }) {
+  const lines = text.split('\n')
+  const nodes: React.ReactNode[] = []
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    if (line.startsWith('## ')) {
+      nodes.push(<h2 key={i}>{parseBold(line.slice(3))}</h2>)
+      i++
+    } else if (line.startsWith('### ')) {
+      nodes.push(<h3 key={i}>{parseBold(line.slice(4))}</h3>)
+      i++
+    } else if (/^(\s*)-\s/.test(line)) {
+      const items: React.ReactNode[] = []
+      while (i < lines.length && /^(\s*)-\s/.test(lines[i])) {
+        const match = lines[i].match(/^(\s*)-\s(.*)$/)
+        const indent = match?.[1]?.length ?? 0
+        const content = match?.[2] ?? ''
+        items.push(
+          <li key={i} style={{ marginLeft: indent > 0 ? 20 : 0 }}>
+            {parseBold(content)}
+          </li>
+        )
+        i++
+      }
+      nodes.push(<ul key={`ul-${i}`}>{items}</ul>)
+    } else if (line.trim()) {
+      nodes.push(<p key={i}>{parseBold(line)}</p>)
+      i++
+    } else {
+      i++
+    }
+  }
+  return <>{nodes}</>
+}
 
 function ScoreCircle({ score, size = 96 }: { score: number; size?: number }) {
   const r = size / 2 - 6
@@ -412,7 +454,7 @@ export default function Results() {
                   .plan-content strong { color: var(--text-primary); font-weight: 500; }
                 `}</style>
                 <div className="plan-content">
-                  <ReactMarkdown>{session.improvement_plan}</ReactMarkdown>
+                  <PlanMarkdown text={session.improvement_plan} />
                 </div>
               </div>
             </div>
