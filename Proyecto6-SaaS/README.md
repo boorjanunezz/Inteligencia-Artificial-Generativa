@@ -33,43 +33,43 @@ Cuando terminas, no solo ves una nota — recibes **feedback accionable** pregun
 <div align="center">
 
 **Bienvenida — selector de idioma**
-<img src="Bienvenida.png" alt="Pantalla de bienvenida" width="100%" />
+<img src="docs/Bienvenida.png" alt="Pantalla de bienvenida" width="100%" />
 
 <br/>
 
 **Registro — acceso gratuito**
-<img src="Registro.png" alt="Pantalla de registro" width="100%" />
+<img src="docs/Registro.png" alt="Pantalla de registro" width="100%" />
 
 <br/>
 
 **Dashboard — estadísticas globales y sesiones recientes**
-<img src="Dashboard1.png" alt="Dashboard - parte superior" width="100%" />
-<img src="Dashboard2.png" alt="Dashboard - evolución y listado de sesiones" width="100%" />
+<img src="docs/Dashboard1.png" alt="Dashboard - parte superior" width="100%" />
+<img src="docs/Dashboard2.png" alt="Dashboard - evolución y listado de sesiones" width="100%" />
 
 <br/>
 
 **Entrevista — pregunta a pregunta con temporizador**
-<img src="Entrevista.png" alt="Entrevista en curso" width="100%" />
+<img src="docs/Entrevista.png" alt="Entrevista en curso" width="100%" />
 
 <br/>
 
 **Ofertas de empleo personalizadas**
-<img src="Ofertas.png" alt="Ofertas de empleo" width="100%" />
+<img src="docs/Ofertas.png" alt="Ofertas de empleo" width="100%" />
 
 <br/>
 
 **Resultados — puntuación global y desglose por categoría**
-<img src="Resultados1.png" alt="Resultados - puntuación global" width="100%" />
+<img src="docs/Resultados1.png" alt="Resultados - puntuación global" width="100%" />
 
 <br/>
 
 **Resultados — feedback detallado por pregunta**
-<img src="Resultados2.png" alt="Resultados - feedback por pregunta" width="100%" />
+<img src="docs/Resultados2.png" alt="Resultados - feedback por pregunta" width="100%" />
 
 <br/>
 
 **Resultados — plan de mejora de 30 días generado por GPT-4o**
-<img src="Resultados3.png" alt="Resultados - plan de mejora" width="100%" />
+<img src="docs/Resultados3.png" alt="Resultados - plan de mejora" width="100%" />
 
 </div>
 
