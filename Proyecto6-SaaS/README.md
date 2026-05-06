@@ -408,7 +408,7 @@ Proyecto6-SaaS/
 
 <div align="center">
 
-Desarrollado por **Borja Núñez Salegui**
+Desarrollado por **Borja Núñez Salegui y Álvaro Lopez Redondo**
 
 Máster en IA y Big Data · 2025
 
