@@ -42,5 +42,5 @@ if DIST.is_dir():
     app.mount("/assets", StaticFiles(directory=DIST / "assets"), name="assets")
 
     @app.get("/{full_path:path}")
-    def serve_spa(_full_path: str):
+    def serve_spa():
         return FileResponse(DIST / "index.html")
