@@ -1,6 +1,6 @@
 # CNN — Reconocimiento de dígitos
 
-![Demo](https://github.com/user-attachments/assets/8af87b71-5462-46d2-af39-7266ef4bd1ac)
+[![Ver demo](https://img.shields.io/badge/▶_Ver_demo-CNN_Reconocimiento_de_dígitos-black?style=for-the-badge)](https://github.com/user-attachments/assets/8af87b71-5462-46d2-af39-7266ef4bd1ac)
 
 Dos redes neuronales convolucionales entrenadas sobre datasets de distinto tamaño y dificultad, comparadas en tiempo real mediante una app interactiva con canvas de dibujo.
 
