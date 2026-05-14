@@ -1,6 +1,6 @@
 # CNN — Reconocimiento de dígitos
 
-![Demo](../docs/demo.mp4)
+![Demo](../AppRedesNeuronales/docs/demo-cnn.mp4)
 
 Dos redes neuronales convolucionales entrenadas sobre datasets de distinto tamaño y dificultad, comparadas en tiempo real mediante una app interactiva con canvas de dibujo.
 
