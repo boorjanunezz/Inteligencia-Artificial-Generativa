@@ -1,51 +1,38 @@
-# RNA Base
+# RNA — Predicción de precios de vivienda
 
-Este módulo introduce los fundamentos de las redes neuronales artificiales y su implementación paso a paso con Keras. Aquí encontrarás la guía teórica, un notebook guía y los casos prácticos asociados para aplicar lo aprendido.
+Red neuronal densa (MLP) entrenada para predecir el precio de inmuebles en ciudades de India a partir de características numéricas y codificación one-hot de localización.
 
-## 📖 Contenido Disponible
+## Qué se construyó
 
-### 📘 Teoría
+Un pipeline completo de regresión con Keras:
 
-Guía de referencia con los conceptos clave de la RNA base: neuronas y capas, activaciones, funciones de pérdida, optimización, regularización y métricas.
+- **Dataset:** 98 000 propiedades (Kaggle — India House Prices)
+- **Features:** 6 numéricas (área, baños, planta, plantas totales, mobiliario, tipo de transacción) + 81 one-hot por ciudad = **87 features**
+- **Target:** `log₁p(precio en INR)` — se invierte con `expm1` al predecir
+- **Arquitectura:** `Input(87) → Dense(512, ReLU) → Dense(256, ReLU) → Dense(128, ReLU) → Dense(1, linear)`
+- **Resultados:** R² = 0.93 · MAE ≈ $15 700 USD
 
-➡️ **[Ver guía teórica](./TEORIA.md)**
+## Archivos
 
-**Temas cubiertos:**
-- Qué es una RNA y por qué usarla
-- Anatomía de una red neuronal
-- Funciones de activación
-- Salidas y funciones de pérdida según la tarea
-- Backpropagation y optimización
-- Regularización y estabilidad del entrenamiento
-- Métricas e interpretación de resultados
-- Pipeline completo de entrenamiento en Keras
+| Archivo | Descripción |
+|---|---|
+| `rna_prediccion_precios_onehot.ipynb` | Notebook completo: EDA, preprocesado, entrenamiento, evaluación |
+| `house_rna_onehot_model.keras` | Modelo entrenado serializado |
+| `house_scaler_onehot.joblib` | StandardScaler ajustado sobre las 6 features numéricas |
+| `house_feature_cols.joblib` | Lista ordenada de las 87 columnas de entrada |
+| `location_encoding.csv` | Mapeo ciudad → columna one-hot |
+| `house_prices_clean.csv` | Dataset limpio |
+| `house_prices_onehot.csv` | Dataset con encoding aplicado |
 
-### 🧪 Notebook guiado
+## Cómo ejecutar
 
-Notebook interactivo con una estructura paso a paso para construir una RNA en Keras, incluyendo instalación de dependencias y celdas preparadas para completar cada fase del desarrollo.
+```bash
+# Activar entorno con TensorFlow instalado
+jupyter notebook rna_prediccion_precios_onehot.ipynb
+```
 
-➡️ **[Abrir notebook](./rna_base.ipynb)**
+El notebook genera los tres ficheros `.keras` y `.joblib` que consume la app interactiva.
 
-### 🎯 Prácticas
+## App interactiva
 
-Casos de estudio para aplicar la RNA base y sus variantes en escenarios concretos.
-
-➡️ **[Predicción de precios de viviendas](./Practicas/prediccion-precios-vivienda.md)**
-
-➡️ **[Predicción del precio del oro con redes LSTM](./Practicas/prediccion-precios-oro.md)**
-
-## 🚀 Cómo usar este contenido
-
-1. **Comienza con la teoría** - Revisa la guía para entender los conceptos base.
-2. **Sigue el notebook** - Completa las celdas en orden para construir la red paso a paso.
-3. **Practica con casos reales** - Aplica lo aprendido en los ejercicios del directorio `Practicas`.
-4. **Consulta cuando lo necesites** - Usa este README como índice rápido del módulo.
-
-## 💡 Recomendaciones
-
-- **Empieza por la arquitectura más simple** y añade complejidad solo cuando la base funcione.
-- **Alinea salida, loss y métricas** con el tipo de problema.
-- **Monitoriza validación** para detectar sobreajuste cuanto antes.
-- **Usa el notebook como plantilla** para tus propios experimentos.
-
----
+La predicción en tiempo real está integrada en la app del directorio [`../AppRedesNeuronales/`](../AppRedesNeuronales/). Ver el [README de la app](../AppRedesNeuronales/README.md) para instrucciones de arranque.
