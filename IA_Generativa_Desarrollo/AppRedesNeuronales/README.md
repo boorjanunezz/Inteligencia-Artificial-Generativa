@@ -2,10 +2,6 @@
 
 App Streamlit que agrupa las prácticas de redes neuronales del máster en una única interfaz: predicción de precios de vivienda (RNA) y reconocimiento de dígitos dibujados a mano (CNN).
 
-## Demo — Reconocimiento de dígitos (CNN)
-
-![Demo CNN](../docs/demo.mp4)
-
 ## Funcionalidades
 
 ### ✍️ Reconocimiento de dígitos (CNN)
